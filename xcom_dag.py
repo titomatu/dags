@@ -3,6 +3,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.utils.task_group import TaskGroup
+from airflow.utils.trigger_rule import TriggerRule
 
 from random import uniform
 from datetime import datetime
@@ -81,7 +82,8 @@ with DAG('xcom_dag', schedule_interval='@daily', default_args=default_args, catc
     )
 
     storing = DummyOperator(
-        task_id='storing'
+        task_id='storing',
+        trigger_rule=TriggerRule.NONE_FAILED_OR_SKIPPED
     )
 
     downloading_data >> processing_tasks >> choose_model
