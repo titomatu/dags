@@ -1,7 +1,6 @@
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
-from airflow.operators.subdag import SubDagOperator
 from airflow.utils.task_group import TaskGroup
 
 from random import uniform
@@ -11,9 +10,12 @@ default_args = {
     'start_date': datetime(2020, 1, 1)
 }
 
-def _training_model():
+def _training_model(ti):
+#def _training_model():
     accuracy = uniform(0.1, 10.0)
     print(f'model\'s accuracy: {accuracy}')
+    #return accuracy #push accuracy to xcom
+    ti.xcom_push(key='model_accuracy', value=accuracy)
 
 def _choose_best_model():
     print('choose best model')
