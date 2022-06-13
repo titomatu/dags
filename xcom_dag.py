@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator, BranchPythonOperator
+from airflow.operators.dummy import DummyOperator
 from airflow.utils.task_group import TaskGroup
 
 from random import uniform
@@ -29,6 +30,13 @@ def _choose_best_model(ti): #ti task instance object
     max_value = np.max(accuracies)
     print(max_value)
     ti.xcom_push(key='max_value',value=max_value)
+
+def _is_accurate(ti):
+    max_value = ti.xcom_pull(key='max_value', task_ids='task_4')
+    if(max_value>5):
+        #return ['accurate', 'inaccurate'] #execute multiple tasks
+        return('accurate')
+    return('inaccurate')
 
 with DAG('xcom_dag', schedule_interval='@daily', default_args=default_args, catchup=False) as dag:
 
@@ -59,4 +67,22 @@ with DAG('xcom_dag', schedule_interval='@daily', default_args=default_args, catc
         python_callable=_choose_best_model
     )
 
+    is_accurate = BranchPythonOperator(
+        task_id='is_accurate',
+        python_callable=_is_accurate
+    )
+
+    accurate = DummyOperator(
+        task_id='accurate'
+    )
+
+    inaccurate = DummyOperator(
+        task_id='inaccurate'
+    )
+
+    storing = DummyOperator(
+        task_id='storing'
+    )
+
     downloading_data >> processing_tasks >> choose_model
+    choose_model >> is_accurate >> [accurate, inaccurate] >> storing
